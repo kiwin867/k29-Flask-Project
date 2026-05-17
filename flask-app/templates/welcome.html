@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Welcome</title>
+</head>
+<body>
+<!-- using Jinja templating to insert user's fist and last name -->
+<h2>Welcome {{ first_name }} {{ last_name }}!</h2>
+<p>You have been registered successfully.</p>
+<div>
+<!-- display a user's photo with dynamic source URL -->
+<!-- src attr is set to `photo_src', a var passed to template -->
+<!-- alt att provides alternative info for an image -->
+<!-- CSS style applied directly to image setting the height -->
+<img src="{{ photo_src }}" alt="User Photo" style="height: 200px;"/>
+</div>
+i <!-- a link to navigate back to home pages -->
+<a href="/">Back to Home</a>
+</body>
+</html>

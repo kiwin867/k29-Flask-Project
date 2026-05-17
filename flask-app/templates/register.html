@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Registrations Form</title>
+<!-- title displayed on the browser's bar -->
+</head>
+<body>
+<h4>Register</h4>
+<!-- registration form -->
+<!-- sets method POST for secure transmission -->
+<!-- action attr states where form data are to be sent -->
+<!-- enctype attr states how form-data should be encoded when submitted -->
+<form method="POST" action="/register" enctype="multipart/form-data">
+<!-- input the first, last name, email etc. -->
+<input type="text" name="first_name" placeholder="First Name" required><br>
+<input type="text" name="last_name" placeholder="Last Name" required><br>
+<input type="email" name="email" placeholder="Email" required><br>
+<input type="password" name="password" placeholder="Password" required><br>
+<input type="file" name="photo" accept="image/*" required><br>
+<!-- submit button for the form -->
+<button type="submit">Register</button>
+</form>
+</body>
+</html>
