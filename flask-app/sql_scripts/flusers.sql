@@ -5,7 +5,7 @@ CREATE TABLE flusers (
  fname text,
  lname text,
  email varchar(20) unique,
- pass varchar(12) unique,
+ pass varchar(12),
  photo bytea,
  dob date
  );

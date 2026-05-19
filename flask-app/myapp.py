@@ -84,6 +84,7 @@ def login():
     user = cursor.fetchone()
     cursor.close()
     if user:
+      global logged_in_user
       logged_in_user = email
       print(logged_in_user)
       return render_template('home.html', user=logged_in_user)
