@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Doc title on browser's title bar -->
+<title>Listing of all Friends</title>
+</head>
+<body>
+<h4>All friends</h4>
+<!-- link to home of the web-app -->
+<a href="/">Back to Home</a>
+<div>
+<!-- start a loop for all users in users list -->
+{% for friend in friends %}
+<div>
+<!-- show the user's photo through the
+object's photo_src attr -->
+<h5>{{ friend.first_name }} {{ friend.last_name }}</h5>
+<h5>{{ friend.email }} </h5>
+</div>
+{% endfor %}
+<!-- end of the loop -->
+</div>
+</body>
+</html>

@@ -5,6 +5,7 @@ import psycopg2
 import base64
 # create a new Flask web-app instance
 myapp = Flask(__name__)
+logged_in_user = "Guest" # default user if not logged in
 # setup the needed database connection details.
 # they may of course change depending on your setting.
 DB_HOST = "localhost" # database on local host
@@ -24,13 +25,79 @@ password=DB_PASS
 # often fired from a browser or mobile app for a specific
 # URL and an HTTP method such as GET, POST, DELETE
 #
+
+# route registration page which accepts both GET and POST HTTP requests
+@myapp.route('/addfriend', methods=['GET', 'POST'])
+def addfriend():
+    if request.method == 'POST':
+     # retrieve the data sent through the POST request
+     email = request.form['email']
+     # create a cursor object using the database connection
+     cursor = conn.cursor()
+     cursor.execute('SELECT fname, lname, email FROM flusers WHERE email = %s', (email,))
+     existing_friend = cursor.fetchone()
+     first_name = existing_friend[0]
+     last_name = existing_friend[1]
+     cursor.execute('SELECT id FROM flusers WHERE email = %s', (logged_in_user,))
+     userid = cursor.fetchone()
+     if existing_friend and logged_in_user != "Guest":
+     # execute an INSERT command to add the new friend to the 'flfriends' table
+      insert_command = """
+      INSERT INTO flfriends (fid, fname, lname, email)
+      VALUES (%s, %s, %s, %s)
+      """;
+      insert_data = (userid, first_name, last_name, email);
+      cursor.execute(insert_command, insert_data);
+     # commit the transaction to save the changes in the database
+      conn.commit()
+     # close the cursor to free up resources
+     cursor.close()
+     return render_template('home.html', user=logged_in_user)
+    return render_template('addfriend.html')
+@myapp.route('/viewfriends')
+def viewfriends():
+    # if logged_in_user == "Guest":
+    #     return "Please log in to view your friends."
+    cursor = conn.cursor()
+    print(logged_in_user)
+    cursor.execute('SELECT id FROM flusers WHERE email = %s', (logged_in_user,))
+    userid = cursor.fetchone()
+    cursor.execute('SELECT fname, lname, email FROM flfriends WHERE fid = %s', (userid,))
+    friends_data = cursor.fetchall()
+    friends_list = []
+    for friend in friends_data:
+        first_name, last_name, email = friend
+        friends_list.append({
+        'first_name': first_name,
+        'last_name': last_name,
+        'email': email
+        })
+    cursor.close()
+    return render_template('viewfriends.html', friends=friends_list)
+@myapp.route('/login', methods=['GET', 'POST'])
+def login():
+  if request.method == 'POST':
+    email = request.form['email']
+    password = request.form['password']
+    cursor = conn.cursor()
+    cursor.execute('SELECT email FROM flusers WHERE email = %s AND pass = %s', (email, password))
+    user = cursor.fetchone()
+    cursor.close()
+    if user:
+      logged_in_user = email
+      print(logged_in_user)
+      return render_template('home.html', user=logged_in_user)
+    else:
+      return "Invalid email or password. Please try again."
+  return render_template('login.html')
 @myapp.route('/')
 def home():
 # this route designates all gets started:
 # render and return the home page
 # found within templates dir
- return render_template('home.html')
-# route registration page which accepts both GET and POST HTTP requests
+ print(logged_in_user)
+ return render_template('home.html', user=logged_in_user)
+
 @myapp.route('/register', methods=['GET', 'POST'])
 def register():
 # check if the request method is POST
@@ -44,17 +111,31 @@ def register():
   password = request.form['password'] # this should be hashed..
   photo = request.files['photo'].read()
 # read in the binary content of the uploaded photo
+  dob = request.form['dob'] #optional
 #
 # create a cursor object using the database connection
 # this is how prepared SQL statements can be executed.
   cursor = conn.cursor() # this also implies a BEGIN;
-# exec an INSERT to enter the form data into the 'flusers' table
-  insertcomm = """
+  cursor.execute('SELECT email FROM flusers WHERE email = %s', (email,))
+  existing_user = cursor.fetchone()
+  if existing_user:
+    cursor.close()
+    return "Email already registered. Please use a different email."
+  if dob == '':
+    intercomm = """
     INSERT INTO flusers (fname, lname, email, pass, photo)
     VALUES (%s, %s, %s, %s, %s)
     """;
-  insertdata = (first_name, last_name, email, password, psycopg2.Binary(photo),);
-  cursor.execute(insertcomm, insertdata);
+    interdata = (first_name, last_name, email, password, psycopg2.Binary(photo),);
+    cursor.execute(intercomm, interdata);
+  else:
+# exec an INSERT to enter the form data into the 'flusers' table
+    insertcomm = """
+    INSERT INTO flusers (fname, lname, email, pass, photo, dob)
+    VALUES (%s, %s, %s, %s, %s, %s)
+    """;
+    insertdata = (first_name, last_name, email, password, psycopg2.Binary(photo), dob,);
+    cursor.execute(insertcomm, insertdata);
 # commit the transaction to save the changes in the database
   conn.commit()
 # from the database, get the photo that was just uploaded
@@ -86,14 +167,14 @@ def users():
     # create a cursor on the psql connection to execute SQL statement(s)
     cursor = conn.cursor()
     # execute a SELECT command to fetch all user data
-    cursor.execute('SELECT fname, lname, email, photo FROM flusers')
+    cursor.execute('SELECT fname, lname, email, photo, dob FROM flusers')
     # retrieve all rows of results
     users_data = cursor.fetchall()
     # list to hold user data with encoded photos
     users_list = []
     # loop through every user data obtained with fetchall()
     for user in users_data:
-        first_name, last_name, email, photo_data = user
+        first_name, last_name, email, photo_data, dob = user
         # encode the binary photo data to base64 to embed in HTML
         encoded_photo = base64.b64encode(photo_data).decode('utf-8')
         # create a data URI for the image which
@@ -104,7 +185,8 @@ def users():
         'first_name': first_name,
         'last_name': last_name,
         'email': email,
-        'photo_src': photo_src
+        'photo_src': photo_src,
+        'dob': dob
         })
     # close the cursor to free up resources
     cursor.close()
