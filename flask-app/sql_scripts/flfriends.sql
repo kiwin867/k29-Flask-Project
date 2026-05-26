@@ -5,5 +5,5 @@ CREATE TABLE flfriends (
  fid integer references flusers(id),
  fname text,
  lname text,
- email varchar(20) unique
+ email varchar(20)
  );

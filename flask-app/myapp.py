@@ -50,6 +50,8 @@ def addfriend():
       cursor.execute(insert_command, insert_data);
      # commit the transaction to save the changes in the database
       conn.commit()
+     else:
+       return "Friend not found or you are not logged in. Please try again."
      # close the cursor to free up resources
      cursor.close()
      return render_template('home.html', user=logged_in_user)
@@ -162,6 +164,47 @@ photo_src=photo_src
 )
 # if the method is not POST -it is just a GET request90 # render and return the registration form
  return render_template('register.html')
+@myapp.route('/logout')
+def logout():
+    global logged_in_user
+    logged_in_user = "Guest"
+    return render_template('home.html', user=logged_in_user)
+
+@myapp.route('/vieworcreatealbum')
+def vieworcreatealbum():
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM flusers WHERE email = %s', (logged_in_user,))
+    userid = cursor.fetchone()
+    cursor.execute('SELECT alname, doc FROM albums WHERE useri = %s', (userid,))
+    albums_data = cursor.fetchall()
+    albums_list = []
+    for album in albums_data:
+        alname, doc = album
+        albums_list.append({
+        'alname': alname,
+        'doc': doc
+        })
+    cursor.close()
+    return render_template('vieworcreatealbum.html', albums=albums_list)
+
+@myapp.route('/createalbum', methods=['GET', 'POST'])
+def createalbum():
+    if request.method == 'POST' and logged_in_user != "Guest":
+        albumname = request.form['alname']
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM flusers WHERE email = %s', (logged_in_user,))
+        userid = cursor.fetchone()
+        insert_command = """
+        INSERT INTO albums (userid, alname, doc)
+        VALUES (%s, %s, CURRENT_DATE)
+        """;
+        print(userid);
+        insert_data = (userid, albumname);
+        cursor.execute(insert_command, insert_data);
+        conn.commit()
+        cursor.close()
+        return vieworcreatealbum()
+    return render_template('createalbum.html')
 # route that helps display all users
 @myapp.route('/users')
 def users():
