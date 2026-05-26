@@ -228,7 +228,7 @@ def users():
         users_list.append({
         'first_name': first_name,
         'last_name': last_name,
-        'email': email,
+        'email': email, #pythonemail=request.arg.get('email)
         'photo_src': photo_src,
         'dob': dob
         })

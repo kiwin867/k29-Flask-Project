@@ -14,7 +14,7 @@
     <div>
         <!-- show the user's photo through the
         object's photo_src attr -->
-<a href="/">{{user.first_name}}</a>
+<a href="/temp?email={{user.email}}">{{user.first_name}}</a>
 <h5>{{ user.first_name }} {{ user.last_name }}</h5>
 <h5>{{ user.email }} {{user.dob}} </h5>
 <img src="{{ user.photo_src }}" alt="User Photo" style="height: 100px;">
