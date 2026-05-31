@@ -14,13 +14,15 @@
     <div>
         <!-- show the user's photo through the
         object's photo_src attr -->
-<a href="/temp?email={{user.email}}">{{user.first_name}}</a>
+<a href="/viewuseralbums?email={{user.email}}">{{user.first_name}}</a>
 <h5>{{ user.first_name }} {{ user.last_name }}</h5>
 <h5>{{ user.email }} {{user.dob}} </h5>
 <img src="{{ user.photo_src }}" alt="User Photo" style="height: 100px;">
+<br>
 <!-- src attr is dynamically set to a user's photo URL -->
 <!-- alt ayyt provides alternative text for image -->
 <!-- style designated inline the height -->
+ --------------------------------------------------
 </div>
 {% endfor %}
 <!-- end of the loop -->

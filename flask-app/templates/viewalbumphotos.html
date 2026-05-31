@@ -2,20 +2,21 @@
 <html lang="en">
 <head>
 <!-- Doc title on browser's title bar -->
-<title>View your album</title>
+<title>Viewing {{ alname }} </title>
 </head>
 <body>
-<h4>All your albums</h4>
+<h4>{{ alname }}</h4>
 <!-- link to home of the web-app -->
 <a href="/">Back to Home</a>
 <div>
     <!-- start a loop for all users in users list -->
-    {% for album in albums %}
+    {% for photo in photos %}
     <div>
         <!-- show the user's photo through the
         object's photo_src attr -->
-<a href="/viewalbumphotos?albumid={{album.albumid}}">{{album.alname}}</a>
-<h5>{{ album.doc }} </h5>
+<img src="{{ photo.photo_src }}" alt="Photo" style="height: 200px;">
+<h5>{{ photo.doc }} </h5>
+<h15>{{ photo.name }} </h5>
 <!-- src attr is dynamically set to a user's photo URL -->
 <!-- alt ayyt provides alternative text for image -->
 <!-- style designated inline the height -->
@@ -23,6 +24,6 @@
 {% endfor %}
 <!-- end of the loop -->
 </div>
-<a href="/createalbum">Create a new album</a>
+<a href="/addphoto?albumid={{ albumid }}" style="display: block; margin-top: 20px;">Add a new photo to this album</a>
 </body>
 </html>

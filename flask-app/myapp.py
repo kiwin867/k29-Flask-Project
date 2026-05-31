@@ -1,6 +1,6 @@
 # import necessary libraries from Flask,
 # psycopg2 for PSQL, and base64 for encoding
-from flask import Flask, request, render_template, make_response
+from flask import Flask, request, render_template, make_response, redirect, url_for
 import psycopg2
 import base64
 # create a new Flask web-app instance
@@ -58,8 +58,8 @@ def addfriend():
     return render_template('addfriend.html')
 @myapp.route('/viewfriends')
 def viewfriends():
-    # if logged_in_user == "Guest":
-    #     return "Please log in to view your friends."
+    if logged_in_user == "Guest":
+        return "Please log in to view your friends."
     cursor = conn.cursor()
     print(logged_in_user)
     cursor.execute('SELECT id FROM flusers WHERE email = %s', (logged_in_user,))
@@ -172,21 +172,41 @@ def logout():
 
 @myapp.route('/vieworcreatealbum')
 def vieworcreatealbum():
+    if logged_in_user == "Guest":
+        return "Please log in to view your albums."
     cursor = conn.cursor()
     cursor.execute('SELECT id FROM flusers WHERE email = %s', (logged_in_user,))
     userid = cursor.fetchone()
-    cursor.execute('SELECT alname, doc FROM albums WHERE useri = %s', (userid,))
+    cursor.execute('SELECT alname, doc, albumid FROM albums WHERE userid = %s', (userid,))
     albums_data = cursor.fetchall()
     albums_list = []
     for album in albums_data:
-        alname, doc = album
+        alname, doc, albumid = album
         albums_list.append({
         'alname': alname,
-        'doc': doc
+        'doc': doc,
+        'albumid': albumid
         })
     cursor.close()
     return render_template('vieworcreatealbum.html', albums=albums_list)
-
+@myapp.route('/viewuseralbums')
+def viewuseralbums():
+    email = request.args.get('email')
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM flusers WHERE email = %s', (email,))
+    userid = cursor.fetchone()
+    cursor.execute('SELECT alname, doc, albumid FROM albums WHERE userid = %s', (userid,))
+    albums_data = cursor.fetchall()
+    albums_list = []
+    for album in albums_data:
+        alname, doc, albumid = album
+        albums_list.append({
+        'alname': alname,
+        'doc': doc,
+        'albumid': albumid
+        })
+    cursor.close()
+    return render_template('viewuseralbums.html', albums=albums_list, email=email)
 @myapp.route('/createalbum', methods=['GET', 'POST'])
 def createalbum():
     if request.method == 'POST' and logged_in_user != "Guest":
@@ -205,6 +225,47 @@ def createalbum():
         cursor.close()
         return vieworcreatealbum()
     return render_template('createalbum.html')
+@myapp.route('/viewalbumphotos')
+def viewalbumphotos():
+    albumid = request.args.get('albumid')
+    print("albumid: ", albumid)
+    cursor = conn.cursor()
+    cursor.execute('SELECT alname FROM albums WHERE albumid = %s', (albumid,))
+    alname = cursor.fetchone()[0]
+    cursor.execute('SELECT phdata, doc, phname FROM photos WHERE albumid = %s', (albumid,))
+    photos = cursor.fetchall()
+    photos_list = []
+    for photo in photos:
+        photo_data, doc, phname = photo
+        encoded_photo = base64.b64encode(photo_data).decode('utf-8')
+        photo_src = f"data:image/*;base64,{encoded_photo}"
+        photos_list.append({
+        'photo_src': photo_src,
+        'doc': doc,
+        'name': phname
+        })
+    cursor.close()
+    return render_template('viewalbumphotos.html', photos=photos_list, alname=alname, albumid=albumid)
+@myapp.route('/addphoto', methods=['GET', 'POST'])
+def addphoto():
+    albumid = request.args.get('albumid')
+    if request.method == 'POST':
+        albumid = request.form.get('albumid') or albumid
+    print("albumid: ", albumid)
+    if request.method == 'POST' and logged_in_user != "Guest":
+        photo = request.files['photo'].read()
+        name = request.form['name']
+        cursor = conn.cursor()
+        insert_command = """
+        INSERT INTO photos (albumid, phdata, phname, doc)
+        VALUES (%s, %s, %s, CURRENT_DATE)
+        """;
+        insert_data = (albumid, psycopg2.Binary(photo), name);
+        cursor.execute(insert_command, insert_data);
+        conn.commit()
+        cursor.close()
+        return redirect(url_for('viewalbumphotos', albumid=albumid)) #online help
+    return render_template('addphoto.html', albumid=albumid)
 # route that helps display all users
 @myapp.route('/users')
 def users():
