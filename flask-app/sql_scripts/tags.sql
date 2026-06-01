@@ -2,5 +2,5 @@ DROP TABLE IF EXISTS tags;
 
 CREATE TABLE tags (
  tagid serial primary key,
- tagname text
+ tagname text UNIQUE
  );
