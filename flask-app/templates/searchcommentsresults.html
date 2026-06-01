@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Doc title on browser's title bar -->
+<title>Searching comments </title>
+</head>
+<body>
+<h4>Search for comments</h4>
+<!-- link to home of the web-app -->
+<a href="/">Back to Home</a>
+<br>
+        <!-- start a loop for all users in users list -->
+        {% for result in search_results %}
+        <img src="{{ result.photo_src }}" alt="Comment on Photo" style="height: 50px; vertical-align: middle; border-radius: 50%; margin-right: 10px;">
+        <h5>{{ result.commenter_fname }} {{ result.commenter_lname }}: {{ result.comment_text }}</h5>
+        {% endfor %}
+        <div>
+<a href="/searchcomments" style="display: block; margin-top: 20px;">Search again</a>
+</body>
+</html>

@@ -27,6 +27,25 @@ password=DB_PASS
 #
 
 # route registration page which accepts both GET and POST HTTP requests
+@myapp.route('/addfriendimmediate', methods=['POST'])
+def addfriendimmediate():
+    email = request.form.get('email')
+    cursor = conn.cursor()
+    cursor.execute('SELECT fname, lname, email FROM flusers WHERE email = %s', (email,))
+    existing_friend = cursor.fetchone()
+    first_name = existing_friend[0]
+    last_name = existing_friend[1]
+    cursor.execute('SELECT id FROM flusers WHERE email = %s', (logged_in_user,))
+    userid = cursor.fetchone()
+    insert_command = """
+    INSERT INTO flfriends (fid, fname, lname, email)
+    VALUES (%s, %s, %s, %s)
+    """;
+    insert_data = (userid, first_name, last_name, email);
+    cursor.execute(insert_command, insert_data);
+    conn.commit()
+    cursor.close()
+    return render_template('home.html', user=logged_in_user)
 @myapp.route('/addfriend', methods=['GET', 'POST'])
 def addfriend():
     if request.method == 'POST':
@@ -228,15 +247,16 @@ def createalbum():
 @myapp.route('/viewalbumphotos')
 def viewalbumphotos():
     albumid = request.args.get('albumid')
-    email = request.args.get('email')
     print("albumid: ", albumid)
     cursor = conn.cursor()
-    cursor.execute('SELECT alname FROM albums WHERE albumid = %s', (albumid,))
-    alname = cursor.fetchone()[0]
-    if email is None:
-        email = logged_in_user
-    cursor.execute('SELECT id FROM flusers WHERE email = %s', (email,))
-    user_id = cursor.fetchone()[0]
+    cursor.execute('SELECT alname, userid FROM albums WHERE albumid = %s', (albumid,))
+    album_row = cursor.fetchone()
+    alname, owner_id = album_row
+    cursor.execute('SELECT id FROM flusers WHERE email = %s', (logged_in_user,))
+    user_id = cursor.fetchone()[0] if logged_in_user != "Guest" else None
+    can_add = (user_id == owner_id)
+    print("owner_id: ", owner_id)
+    print("user_id: ", user_id)
     cursor.execute('SELECT phdata, doc, phname, photoid FROM photos WHERE albumid = %s', (albumid,))
     photos = cursor.fetchall()
     photos_list = []
@@ -249,6 +269,15 @@ def viewalbumphotos():
         cursor.execute('SELECT EXISTS (SELECT 1 FROM likes WHERE userid = %s AND photoid = %s)', (user_id, photoid))
         is_liked = cursor.fetchone()[0]
         heart_icon = url_for('static', filename='heart.png' if is_liked else 'unheart.png')
+        cursor.execute('SELECT flusers.fname, flusers.lname FROM likes JOIN flusers ON likes.userid = flusers.id WHERE likes.photoid = %s', (photoid,))
+        likers_data = cursor.fetchall()
+        likers_list = []
+        for liker in likers_data:
+            liker_fname, liker_lname = liker
+            likers_list.append({
+                'first_name': liker_fname,
+                'last_name': liker_lname
+            })
         photos_list.append({
         'photo_src': photo_src,
         'doc': doc,
@@ -256,20 +285,56 @@ def viewalbumphotos():
         'photoid': photoid,
         'phlikes': phlikes,
         'liked': is_liked,
-        'heart_icon': heart_icon
+        'heart_icon': heart_icon,
+        'likers': likers_list
         })
     cursor.close()
-    return render_template('viewalbumphotos.html', photos=photos_list, alname=alname, albumid=albumid)
+    return render_template('viewalbumphotos.html', photos=photos_list, alname=alname, albumid=albumid, current_user=logged_in_user, can_add=can_add)
+@myapp.route('/deletealbum', methods=['POST'])
+def deletealbum():
+    if request.method == 'POST':
+        albumid = request.form.get('albumid')
+        cursor = conn.cursor()
+        cursor.execute('SELECT photoid FROM photos WHERE albumid = %s', (albumid,))
+        photoids = cursor.fetchall()
+        for photoid in photoids:
+            cursor.execute('DELETE FROM comments WHERE photoid = %s', (photoid[0],))
+            cursor.execute('DELETE FROM likes WHERE photoid = %s', (photoid[0],))
+        cursor.execute('DELETE FROM photos WHERE albumid = %s', (albumid,))
+        delete_command = """
+        DELETE FROM albums
+        WHERE albumid = %s
+        """;
+        delete_data = (albumid,);
+        cursor.execute(delete_command, delete_data);
+        conn.commit()
+        cursor.close()
+        return redirect(url_for('vieworcreatealbum')) #online help
+@myapp.route('/removephoto', methods=['POST'])
+def removephoto():
+    if request.method == 'POST':
+        photoid = request.form.get('photoid')
+        albumid = request.form.get('albumid')
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM comments WHERE photoid = %s', (photoid,))
+        cursor.execute('DELETE FROM likes WHERE photoid = %s', (photoid,))
+        delete_command = """
+        DELETE FROM photos
+        WHERE photoid = %s
+        """;
+        delete_data = (photoid,);
+        cursor.execute(delete_command, delete_data);
+        conn.commit()
+        cursor.close()
+        return redirect(url_for('viewalbumphotos', albumid=albumid)) #online help
 @myapp.route('/addphoto', methods=['GET', 'POST'])
 def addphoto():
-    albumid = request.args.get('albumid')
     if request.method == 'POST':
         albumid = request.form.get('albumid') or albumid
-    print("albumid: ", albumid)
     if request.method == 'POST' and logged_in_user != "Guest":
+        cursor = conn.cursor()
         photo = request.files['photo'].read()
         name = request.form['name']
-        cursor = conn.cursor()
         insert_command = """
         INSERT INTO photos (albumid, phdata, phname, doc)
         VALUES (%s, %s, %s, CURRENT_DATE)
@@ -279,7 +344,13 @@ def addphoto():
         conn.commit()
         cursor.close()
         return redirect(url_for('viewalbumphotos', albumid=albumid)) #online help
-    return render_template('addphoto.html', albumid=albumid)
+    albumid = request.args.get('albumid')
+    cursor = conn.cursor()
+    cursor.execute('SELECT alname FROM albums WHERE albumid = %s', (albumid,))
+    alname = cursor.fetchone()[0]
+    print("alname: ", alname)
+    cursor.close()
+    return render_template('addphoto.html', albumid=albumid, alname=alname)
 @myapp.route('/likephoto', methods=['POST'])
 def likephoto():
   if logged_in_user == "Guest":
@@ -314,7 +385,148 @@ def likephoto():
     conn.commit()
     cursor.close()
     return redirect(url_for('viewalbumphotos', albumid=albumid, heart=heart)) #online help
+@myapp.route('/viewcomments')
+def viewcomments():
+    photoid = request.args.get('photoid')
+    cursor = conn.cursor()
+    cursor.execute('SELECT phname FROM photos WHERE photoid = %s', (photoid,))
+    photoname = cursor.fetchone()[0]
+    cursor.execute('SELECT phdata FROM photos WHERE photoid = %s', (photoid,))
+    photo_data = cursor.fetchone()[0]
+    encoded_photo = base64.b64encode(photo_data).decode('utf-8')
+    photo_src = f"data:image/*;base64,{encoded_photo}"    
+    cursor.execute('SELECT comments.userid, comments.photoid, comments.comment, comments.doc FROM comments WHERE comments.photoid = %s', (photoid,))
+    comments_data = cursor.fetchall()
+    comments_list = []
+    for comment in comments_data:
+        userid, photoid, comment_text, doc = comment
+        cursor.execute('SELECT fname, lname FROM flusers WHERE id = %s', (userid,))
+        commenter_data = cursor.fetchone()
+        commenter_fname, commenter_lname = commenter_data if commenter_data else ("Guest", "User")
+        comments_list.append({
+            'first_name': commenter_fname,
+            'last_name': commenter_lname,
+            'comment_text': comment_text
+        })
+    cursor.close()
+    return render_template('viewcomments.html', comments=comments_list, photoname=photoname, photoid=photoid, photo_src=photo_src)
+@myapp.route('/addcomment', methods=['POST'])
+def addcomment():
+  if request.method == 'POST':
+    photoid = request.form.get('photoid')
+    albumid = request.form.get('albumid')
+    comment_doc = request.form.get('comment_text')
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM flusers WHERE email = %s', (logged_in_user,))
+    userid = cursor.fetchone()[0] if logged_in_user != "Guest" else None
+    insert_command = """
+    INSERT INTO comments (userid, photoid, comment, doc)
+    VALUES (%s, %s, %s, CURRENT_DATE)
+    """;
+    insert_data = (userid, photoid, comment_doc);
+    cursor.execute(insert_command, insert_data);
+    conn.commit()
+    cursor.close()
+    return redirect(url_for('viewcomments', photoid=photoid, albumid=albumid)) #online help
+@myapp.route('/searchcomments' , methods=['GET', 'POST'])
+def searchcomments():
+    if request.method == 'POST':
+        search_query = request.form.get('search_query')
+        cursor = conn.cursor()
+        cursor.execute("""
+        SELECT comments.comment, flusers.fname, flusers.lname, photos.phname, photos.phdata
+        FROM comments
+        JOIN flusers ON comments.userid = flusers.id
+        JOIN photos ON comments.photoid = photos.photoid
+        WHERE comments.comment = %s
+        """, (search_query,))
+        search_results_data = cursor.fetchall()
+        search_results_list = []
+        for result in search_results_data:
+            comment_text, commenter_fname, commenter_lname, phototitle, photo_data = result
+            encoded_photo = base64.b64encode(photo_data).decode('utf-8')
+            photo_src = f"data:image/*;base64,{encoded_photo}"
+            search_results_list.append({
+                'comment_text': comment_text,
+                'commenter_fname': commenter_fname,
+                'commenter_lname': commenter_lname,
+                'phototitle': phototitle,
+                'photo_src': photo_src
+            })
+        cursor.close()
+        return render_template('searchcommentsresults.html', search_results=search_results_list, search_query=search_query)
+    return render_template('searchcomments.html', search_results=None)
+@myapp.route('/useractivity')
+def useractivity():
+    cursor = conn.cursor()
+    query = """
+    SELECT 
+        u.id,
+        u.fname,
+        u.lname,
+        COALESCE(photo_count, 0) as photos_uploaded,
+        COALESCE(comment_count, 0) as comments_on_others,
+        COALESCE(photo_count, 0) + COALESCE(comment_count, 0) as total_activity
+    FROM flusers u
+    LEFT JOIN (
+        SELECT userid, COUNT(*) as photo_count
+        FROM photos
+        JOIN albums ON photos.albumid = albums.albumid
+        GROUP BY userid
+    ) photos_uploaded ON u.id = photos_uploaded.userid
+    LEFT JOIN (
+        SELECT c.userid, COUNT(*) as comment_count
+        FROM comments c
+        JOIN photos p ON c.photoid = p.photoid
+        JOIN albums a ON p.albumid = a.albumid
+        WHERE c.userid != a.userid
+        GROUP BY c.userid
+    ) comments_on_others ON u.id = comments_on_others.userid
+    ORDER BY total_activity DESC
+    LIMIT 10;
+    """
+    cursor.execute(query)
+    activity_data = cursor.fetchall()
+    
+    activity_list = []
+    for row in activity_data:
+        activity_list.append({
+            'id': row[0],
+            'fname': row[1],
+            'lname': row[2],
+            'photos_uploaded': row[3],
+            'comments_on_others': row[4],
+            'total_activity': row[5]
+        })
+    
+    cursor.close()
+    return render_template('useractivity.html', activities=activity_list)
 # route that helps display all users
+@myapp.route('/friendsoffriends')
+def friendsoffriends():
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM flusers WHERE email = %s', (logged_in_user,))
+    userid = cursor.fetchone()
+    cursor.execute('SELECT email FROM flfriends WHERE fid = %s', (userid[0],))
+    friends_emails = cursor.fetchall()
+    friends_of_friends_list = []
+    for friend_email in friends_emails:
+        cursor.execute('SELECT id FROM flusers WHERE email = %s', (friend_email[0],))
+        friend_id = cursor.fetchone()
+        cursor.execute('SELECT email FROM flfriends WHERE fid = %s', (friend_id[0],))
+        friends_of_friend_emails = cursor.fetchall()
+        for fof_email in friends_of_friend_emails:
+            if fof_email != logged_in_user:
+                cursor.execute('SELECT fname, lname FROM flusers WHERE email = %s', (fof_email[0],))
+                fof_data = cursor.fetchone()
+                fof_fname, fof_lname = fof_data if fof_data else ("Unknown", "User")
+                friends_of_friends_list.append({
+                    'first_name': fof_fname,
+                    'last_name': fof_lname,
+                    'email': fof_email[0]
+                })
+    cursor.close()
+    return render_template('friendsoffriends.html', friends_of_friends=friends_of_friends_list)
 @myapp.route('/users')
 def users():
     # create a cursor on the psql connection to execute SQL statement(s)
