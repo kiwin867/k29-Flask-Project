@@ -15,6 +15,14 @@
         <!-- show the user's photo through the
         object's photo_src attr -->
 <img src="{{ photo.photo_src }}" alt="Photo" style="height: 200px;">
+<form method="POST" action="/likephoto?photoid={{photo.photoid}}&albumid={{ albumid }}">
+    <input type="hidden" name="photoid" value="{{ photo.photoid }}">
+    <input type="hidden" name="albumid" value="{{ albumid }}">
+    <button type="submit" style="border:none;background:none;padding:0;cursor:pointer;display:inline-flex;align-items:center;">
+      <img src="{{ photo.heart_icon }}" alt="{% if photo.liked %}Unlike{% else %}Like{% endif %}" style="width:20px;height:20px;vertical-align:middle;">
+      <span style="margin-left:6px;">{{ photo.phlikes }}</span>
+    </button>
+</form>
 <h5>{{ photo.doc }} </h5>
 <h15>{{ photo.name }} </h5>
 <!-- src attr is dynamically set to a user's photo URL -->

@@ -1,7 +1,9 @@
 DROP TABLE IF EXISTS likes;
 
 CREATE TABLE likes (
- likeid serial primary key,
- userid integer references flusers(id),
- photoid integer references photos(photoid)
+userid integer,
+photoid integer,
+ PRIMARY KEY (userid, photoid),
+ FOREiGN KEY (userid) REFERENCES flusers(id),
+ FOREIGN KEY (photoid) REFERENCES photos(photoid)
  );

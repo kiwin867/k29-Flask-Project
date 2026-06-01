@@ -228,21 +228,35 @@ def createalbum():
 @myapp.route('/viewalbumphotos')
 def viewalbumphotos():
     albumid = request.args.get('albumid')
+    email = request.args.get('email')
     print("albumid: ", albumid)
     cursor = conn.cursor()
     cursor.execute('SELECT alname FROM albums WHERE albumid = %s', (albumid,))
     alname = cursor.fetchone()[0]
-    cursor.execute('SELECT phdata, doc, phname FROM photos WHERE albumid = %s', (albumid,))
+    if email is None:
+        email = logged_in_user
+    cursor.execute('SELECT id FROM flusers WHERE email = %s', (email,))
+    user_id = cursor.fetchone()[0]
+    cursor.execute('SELECT phdata, doc, phname, photoid FROM photos WHERE albumid = %s', (albumid,))
     photos = cursor.fetchall()
     photos_list = []
     for photo in photos:
-        photo_data, doc, phname = photo
+        photo_data, doc, phname, photoid = photo
         encoded_photo = base64.b64encode(photo_data).decode('utf-8')
         photo_src = f"data:image/*;base64,{encoded_photo}"
+        cursor.execute('SELECT COUNT(*) FROM likes WHERE photoid = %s', (photoid,))
+        phlikes = cursor.fetchone()[0]
+        cursor.execute('SELECT EXISTS (SELECT 1 FROM likes WHERE userid = %s AND photoid = %s)', (user_id, photoid))
+        is_liked = cursor.fetchone()[0]
+        heart_icon = url_for('static', filename='heart.png' if is_liked else 'unheart.png')
         photos_list.append({
         'photo_src': photo_src,
         'doc': doc,
-        'name': phname
+        'name': phname,
+        'photoid': photoid,
+        'phlikes': phlikes,
+        'liked': is_liked,
+        'heart_icon': heart_icon
         })
     cursor.close()
     return render_template('viewalbumphotos.html', photos=photos_list, alname=alname, albumid=albumid)
@@ -266,6 +280,40 @@ def addphoto():
         cursor.close()
         return redirect(url_for('viewalbumphotos', albumid=albumid)) #online help
     return render_template('addphoto.html', albumid=albumid)
+@myapp.route('/likephoto', methods=['POST'])
+def likephoto():
+  if logged_in_user == "Guest":
+    return "Please log in to like photos."
+  if request.method == 'POST':
+    photoid = request.form.get('photoid')
+    albumid = request.form.get('albumid')
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM flusers WHERE email = %s', (logged_in_user,))
+    print("logged_in_user: ", logged_in_user)
+    userid = cursor.fetchone()[0]
+    print("userid: ", userid)
+    cursor.execute('SELECT EXISTS (SELECT 1 FROM likes WHERE userid = %s AND photoid = %s)', (userid, photoid))
+    if cursor.fetchone()[0]:
+        delete_command = """
+        DELETE FROM likes
+        WHERE userid = %s AND photoid = %s
+        """;
+        delete_data = (userid, photoid);
+        cursor.execute(delete_command, delete_data);
+        heart = url_for('static', filename='unheart.png')
+    else:
+        insert_command = """
+        INSERT INTO likes (userid, photoid)
+        VALUES (%s, %s)
+        """;
+        insert_data = (userid, photoid);
+        cursor.execute(insert_command, insert_data);
+        heart = url_for('static', filename='heart.png')
+    print("userid: ", userid)
+    print("photoid: ", photoid)
+    conn.commit()
+    cursor.close()
+    return redirect(url_for('viewalbumphotos', albumid=albumid, heart=heart)) #online help
 # route that helps display all users
 @myapp.route('/users')
 def users():
