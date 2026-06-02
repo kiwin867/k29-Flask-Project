@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
 <!-- Doc title on browser's title bar -->
-<title>Viewing {{ alname }} </title>
+<title>Viewing photos for you </title>
 </head>
 <body>
-<h4>{{ alname }}</h4>
+<h4>Photos you may like</h4>
 <!-- link to home of the web-app -->
 <a href="/">Back to Home</a>
 <div>
@@ -15,9 +15,8 @@
         <!-- show the user's photo through the
         object's photo_src attr -->
 <img src="{{ photo.photo_src }}" alt="Photo" style="height: 200px;">
-<form method="POST" action="/likephoto?photoid={{photo.photoid}}&albumid={{ albumid }}">
+<form method="POST" action="/likephotosforyou?photoid={{photo.photoid}}">
     <input type="hidden" name="photoid" value="{{ photo.photoid }}">
-    <input type="hidden" name="albumid" value="{{ albumid }}">
     <button type="submit" style="border:none;background:none;padding:0;cursor:pointer;display:inline-flex;align-items:center;">
       <img src="{{ photo.heart_icon }}" alt="{% if photo.liked %}Unlike{% else %}Like{% endif %}" style="width:20px;height:20px;vertical-align:middle;">
       <span style="margin-left:6px;margin-right:6px;">{{ photo.phlikes }}</span>
@@ -29,16 +28,9 @@
       </div>
     </button>
 </form>
-<a href="/viewcomments?photoid={{ photo.photoid }}&albumid={{ albumid }}"> comments</a>
+<a href="/viewcomments?photoid={{ photo.photoid }}"> comments</a>
 <h5>{{ photo.doc }} </h5>
 <h15>{{ photo.name }} </h5>
-    {% if can_add %}
-<form method="POST" action="/removephoto" onsubmit="return confirm('Are you sure you want to delete this photo?');">
-    <input type="hidden" name="photoid" value="{{ photo.photoid }}">
-    <input type="hidden" name="albumid" value="{{ albumid }}">
-    <button type="submit" style="border:none;background:none;padding:0;cursor:pointer;color:red;">Delete Photo</button>
-</form>
-{% endif %}
 <div> {% for tag in photo.tags%} 
 <a href="{{ url_for('viewphotosbytag', tagname=tag, mode='all') }}">#{{ tag }}</a> 
 {% endfor %}</div>
@@ -49,12 +41,5 @@
 {% endfor %}
 <!-- end of the loop -->
 </div>
-{% if can_add %}
-<a href="/addphoto?albumid={{ albumid }}" style="display: block; margin-top: 20px;">Add a new photo to this album</a>
-<form method="POST" action="/deletealbum" onsubmit="return confirm('Are you sure you want to delete this album and all its photos?');" style="display: inline;">
-    <input type="hidden" name="albumid" value="{{ albumid }}">
-    <button type="submit" style="border:none;background:none;padding:0;cursor:pointer;color:red;margin-left: 20px;">Delete Album</button>
-</form>
-{% endif %}
 </body>
 </html>

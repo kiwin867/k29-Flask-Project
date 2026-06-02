@@ -406,6 +406,39 @@ def likephoto():
     conn.commit()
     cursor.close()
     return redirect(url_for('viewalbumphotos', albumid=albumid, heart=heart)) #online help
+@myapp.route('/likephotosforyou', methods=['POST'])
+def likephotosforyou():
+  if logged_in_user == "Guest":
+    return "Please log in to like photos."
+  if request.method == 'POST':
+    photoid = request.form.get('photoid')
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM flusers WHERE email = %s', (logged_in_user,))
+    print("logged_in_user: ", logged_in_user)
+    userid = cursor.fetchone()[0]
+    print("userid: ", userid)
+    cursor.execute('SELECT EXISTS (SELECT 1 FROM likes WHERE userid = %s AND photoid = %s)', (userid, photoid))
+    if cursor.fetchone()[0]:
+        delete_command = """
+        DELETE FROM likes
+        WHERE userid = %s AND photoid = %s
+        """;
+        delete_data = (userid, photoid);
+        cursor.execute(delete_command, delete_data);
+        heart = url_for('static', filename='unheart.png')
+    else:
+        insert_command = """
+        INSERT INTO likes (userid, photoid)
+        VALUES (%s, %s)
+        """;
+        insert_data = (userid, photoid);
+        cursor.execute(insert_command, insert_data);
+        heart = url_for('static', filename='heart.png')
+    print("userid: ", userid)
+    print("photoid: ", photoid)
+    conn.commit()
+    cursor.close()
+    return redirect(url_for('photosforyou', heart=heart)) #online help
 @myapp.route('/photosforyou')
 def photosforyou():
     if logged_in_user == "Guest":
@@ -413,24 +446,69 @@ def photosforyou():
     cursor = conn.cursor()
     cursor.execute('SELECT id FROM flusers WHERE email = %s', (logged_in_user,))
     userid = cursor.fetchone()[0]
+    
+    # Single query: Get top 5 tags, then count matches per photo, all in one go
     cursor.execute("""
-    SELECT t.tagname, COALESCE(tag_count, 0) as tag_count
+    WITH user_top_tags AS (
+        SELECT t.tagid, t.tagname
+        FROM tags t
+        JOIN phototags pt ON t.tagid = pt.tagid
+        JOIN photos p ON pt.photoid = p.photoid
+        JOIN albums a ON p.albumid = a.albumid
+        WHERE a.userid = %s
+        GROUP BY t.tagid
+        ORDER BY COUNT(*) DESC
+        LIMIT 5
+    )
+    SELECT p.phdata, p.doc, p.phname, p.photoid,
+           COUNT(utt.tagid) as relevance,
+           COUNT(pt.photoid) as total_tags
     FROM photos p
-    LEFT JOIN (SELECT )
-    ORDER BY tag_count DESC
-    LIMIT 5;
-    """, (userid, userid, userid))
+    LEFT JOIN phototags pt ON p.photoid = pt.photoid
+    LEFT JOIN user_top_tags utt ON pt.tagid = utt.tagid
+    JOIN albums a ON p.albumid = a.albumid
+    JOIN flusers u ON a.userid = u.id
+    WHERE u.id != %s
+    GROUP BY p.photoid
+    ORDER BY relevance DESC, total_tags ASC;
+    """, (userid, userid))
+    
     photos_data = cursor.fetchall()
     photos_list = []
     for photo in photos_data:
-        photo_data, doc, phname, photoid = photo
+        photo_data, doc, phname, photoid, relevance, total_tags = photo
         encoded_photo = base64.b64encode(photo_data).decode('utf-8')
         photo_src = f"data:image/*;base64,{encoded_photo}"
+        cursor.execute('SELECT EXISTS (SELECT 1 FROM likes WHERE userid = %s AND photoid = %s)', (userid, photoid))
+        is_liked = cursor.fetchone()[0]
+        heart_icon = url_for('static', filename='heart.png') if is_liked else url_for('static', filename='unheart.png')
+        cursor.execute('SELECT COUNT(*) FROM likes WHERE photoid = %s', (photoid,))
+        phlikes = cursor.fetchone()[0]
+        cursor.execute('SELECT flusers.fname, flusers.lname FROM likes JOIN flusers ON likes.userid = flusers.id WHERE likes.photoid = %s', (photoid,))
+        likers_data = cursor.fetchall()
+        likers_list = []
+        for liker in likers_data:
+            liker_fname, liker_lname = liker
+            likers_list.append({
+                'first_name': liker_fname,
+                'last_name': liker_lname
+            })
+        cursor.execute('SELECT t.tagname FROM tags t JOIN phototags pt ON t.tagid = pt.tagid WHERE pt.photoid = %s', (photoid,))
+        tags = cursor.fetchall()
+        tag_list=[]
+        for tag in tags:
+          tag_list.append(tag[0])
+
         photos_list.append({
-        'photo_src': photo_src,
-        'doc': doc,
-        'name': phname,
-        'photoid': photoid
+            'photo_src': photo_src,
+            'doc': doc,
+            'name': phname,
+            'photoid': photoid,
+            'relevance': relevance,
+            'heart_icon': heart_icon,
+            'phlikes': phlikes,
+            'likers': likers_list,
+            'tags': tag_list
         })
     cursor.close()
     return render_template('photosforyou.html', photos=photos_list)
@@ -553,7 +631,7 @@ def useractivity():
 # route that helps display all users
 @myapp.route('/friendsoffriends')
 def friendsoffriends():
-    if logged_in_user != "Guest":
+    if logged_in_user == "Guest":
         return "Please log in to view common friends of friends."
     cursor = conn.cursor()
     cursor.execute('SELECT id FROM flusers WHERE email = %s', (logged_in_user,))
