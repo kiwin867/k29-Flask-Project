@@ -504,27 +504,39 @@ def useractivity():
 # route that helps display all users
 @myapp.route('/friendsoffriends')
 def friendsoffriends():
+    if logged_in_user != "Guest":
+        return "Please log in to view common friends of friends."
     cursor = conn.cursor()
     cursor.execute('SELECT id FROM flusers WHERE email = %s', (logged_in_user,))
     userid = cursor.fetchone()
     cursor.execute('SELECT email FROM flfriends WHERE fid = %s', (userid[0],))
     friends_emails = cursor.fetchall()
     friends_of_friends_list = []
+    common_friends_of_friends_list = []
     for friend_email in friends_emails:
         cursor.execute('SELECT id FROM flusers WHERE email = %s', (friend_email[0],))
         friend_id = cursor.fetchone()
         cursor.execute('SELECT email FROM flfriends WHERE fid = %s', (friend_id[0],))
         friends_of_friend_emails = cursor.fetchall()
-        for fof_email in friends_of_friend_emails:
-            if fof_email != logged_in_user:
-                cursor.execute('SELECT fname, lname FROM flusers WHERE email = %s', (fof_email[0],))
-                fof_data = cursor.fetchone()
-                fof_fname, fof_lname = fof_data if fof_data else ("Unknown", "User")
-                friends_of_friends_list.append({
-                    'first_name': fof_fname,
-                    'last_name': fof_lname,
-                    'email': fof_email[0]
-                })
+        for common_friend_email in friends_emails:
+            if common_friend_email != friend_email:
+                cursor.execute('SELECT id FROM flusers WHERE email = %s', (common_friend_email[0],))
+                common_friend_id = cursor.fetchone()
+                cursor.execute('SELECT email FROM flfriends WHERE fid = %s', (common_friend_id[0],))
+                common_friend_friends_emails = cursor.fetchall()
+                for common_friend_friend_email in common_friend_friends_emails:
+                    for fof_email in friends_of_friend_emails:
+                        if fof_email == common_friend_friend_email and fof_email[0] != logged_in_user and fof_email not in friends_emails and fof_email[0] not in common_friends_of_friends_list:
+                            cursor.execute('SELECT fname, lname FROM flusers WHERE email = %s', (fof_email[0],))
+                            fof_data = cursor.fetchone()
+                            fof_fname, fof_lname = fof_data if fof_data else ("Unknown", "User")
+                            common_friends_of_friends_list.append(fof_email[0])
+                            friends_of_friends_list.append({
+                                'first_name': fof_fname,
+                                'last_name': fof_lname,
+                                'email': fof_email[0]
+                            })
+                            break
     cursor.close()
     return render_template('friendsoffriends.html', friends_of_friends=friends_of_friends_list)
 @myapp.route('/users')
