@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Doc title on browser's title bar -->
+<title>Viewing {{ photoname }}'s comments </title>
+</head>
+<body>
+<h4>{{ photoname }}'s comments</h4>
+<img src="{{ photo_src }}" alt="Photo" style="height: 200px;">
+<br>
+
+<!-- link to home of the web-app -->
+<a href="/">Back to Home</a>
+<div>
+    <!-- start a loop for all users in users list -->
+    {% for comment in comments %}
+    <h5>{{ comment.first_name }} {{ comment.last_name }}: {{ comment.comment_text }}</h5>
+    {% endfor %}
+    <div>
+<form method="POST" action="/addcomment" style="display: inline;">
+    <input type="hidden" name="photoid" value="{{ photoid }}">
+    <input type="text" name="comment_text" placeholder="Add a comment..." required>
+    <button type="submit">Submit</button>
+</form>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Doc title on browser's title bar -->
+<title>User Activity</title>
+</head>
+<body>
+<h4>User Activity</h4>
+<div>
+    <!-- start a loop for all users in users list -->
+    {% for activity in activities %}
+    <h5>{{ activity.fname }} {{ activity.lname }}: {{activity.photos_uploaded}}, {{activity.comments_on_others}} {{ activity.total_activity }} activities</h5>
+    {% endfor %}
+</div>
+
+<!-- link to home of the web-app -->
+<a href="/">Back to Home</a>
+</form>
+</body>
+</html>

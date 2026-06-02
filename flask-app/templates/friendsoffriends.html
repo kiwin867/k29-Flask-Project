@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Doc title on browser's title bar -->
+<title>Friends of Friends</title>
+</head>
+<body>
+<h4>Friends recommended for you</h4>
+<!-- link to home of the web-app -->
+<a href="/">Back to Home</a>
+<div>
+    <!-- start a loop for all users in users list -->
+    {% for friend in friends_of_friends %}
+    <form method="POST" action="/addfriendimmediate?email={{ friend.email }}" enctype="multipart/form-data">
+        <input type="hidden" name="email" value="{{ friend.email }}">
+        <h5>{{ friend.first_name }} {{ friend.last_name }}, {{ friend.email }}</h5>
+        <button type="submit">Add Friend</button>
+    </form>
+    {% endfor %}
+    <div>
+</body>
+</html>
