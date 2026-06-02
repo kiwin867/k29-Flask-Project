@@ -249,6 +249,11 @@ def viewalbumphotos():
         cursor.execute('SELECT EXISTS (SELECT 1 FROM likes WHERE userid = %s AND photoid = %s)', (user_id, photoid))
         is_liked = cursor.fetchone()[0]
         heart_icon = url_for('static', filename='heart.png' if is_liked else 'unheart.png')
+        cursor.execute('SELECT t.tagname FROM tags t JOIN phototags pt ON t.tagid = pt.tagid WHERE pt.photoid = %s', (photoid,))
+        tags = cursor.fetchall()
+        tag_list=[]
+        for tag in tags:
+          tag_list.append(tag[0])
         photos_list.append({
         'photo_src': photo_src,
         'doc': doc,
@@ -256,7 +261,8 @@ def viewalbumphotos():
         'photoid': photoid,
         'phlikes': phlikes,
         'liked': is_liked,
-        'heart_icon': heart_icon
+        'heart_icon': heart_icon,
+        'tags' : tag_list
         })
     cursor.close()
     return render_template('viewalbumphotos.html', photos=photos_list, alname=alname, albumid=albumid)
@@ -269,13 +275,27 @@ def addphoto():
     if request.method == 'POST' and logged_in_user != "Guest":
         photo = request.files['photo'].read()
         name = request.form['name']
+        tags_text = request.form.get('tags','')
+        tag_list = tags_text.split()
         cursor = conn.cursor()
         insert_command = """
         INSERT INTO photos (albumid, phdata, phname, doc)
         VALUES (%s, %s, %s, CURRENT_DATE)
-        """;
-        insert_data = (albumid, psycopg2.Binary(photo), name);
-        cursor.execute(insert_command, insert_data);
+        """
+        insert_data = (albumid, psycopg2.Binary(photo), name)
+        cursor.execute(insert_command, insert_data)
+        cursor.execute('SELECT photoid FROM photos WHERE albumid= %s AND phname= %s ORDER BY photoid DESC LIMIT 1', (albumid, name))
+        photoid = cursor.fetchone()[0]
+        for tagname in tag_list:
+          cursor.execute('SELECT tagid FROM tags WHERE tagname = %s', (tagname,))
+          row = cursor.fetchone()
+          if row :
+            tagid = row[0]
+          else:
+            cursor.execute('INSERT INTO tags (tagname) VALUES (%s)', (tagname,))
+            cursor.execute('SELECT tagid FROM tags WHERE tagname = %s', (tagname,))
+            tagid = cursor.fetchone()[0]
+          cursor.execute('INSERT INTO phototags (photoid, tagid) VALUES (%s, %s)', (photoid, tagid))
         conn.commit()
         cursor.close()
         return redirect(url_for('viewalbumphotos', albumid=albumid)) #online help
@@ -348,5 +368,79 @@ def users():
     return render_template('users.html', users=users_list)
     # check if this script is run directly (not imported),
     # and if so, start the Flask application
+@myapp.route('/addtag', methods=[ 'POST' ])
+def addtag():
+  if logged_in_user == "Guest":
+    return "Please log in first to add tag"
+  photoid = request.form['photoid']
+  tagname = request.form['tagname']
+  cursor = conn.cursor()
+  cursor.execute(' INSERT INTO tags (tagname) VALUES (%s)', (tagname,)) #insert tag 
+  cursor.execute(' SELECT tagid FROM tags WHERE tagname = %s', (tagname,)) #get tagid
+  row = cursor.fetchone()
+  if row:
+    tagid= row[0]
+  else:
+    cursor.execute('INSERT INTO tags (tagname) VALUES (%s) RETURNING tagid', (tagname,))
+    tagid= cursor.fetchone()[0]
+  cursor.execute('INSERT INTO phototags (photoid, tagid) VALUES (%s, %s)', (photoid, tagid)) #link tag w photo
+  conn.commit()
+  cursor.close()
+  return redirect(url_for('viewalbumphotos', albumid=request.form.get('albumid')))
+@myapp.route('/tag/<tagname>')
+def viewphotosbytag(tagname):
+  mode = request.args.get('mode', 'all')
+  cursor = conn.cursor()
+  if mode == "my":
+    cursor.execute("""SELECT p.photoid, p.phdata, p.phname, p.doc FROM photos p 
+    JOIN phototags pt ON p.photoid = pt.photoid JOIN tags t ON t.tagid = pt.tagid
+    JOIN albums a ON p.albumid = a.albumid JOIN flusers u ON a.userid = u.id
+    WHERE t.tagname = %s AND u.email = %s""", (tagname, logged_in_user))
+  else:
+    cursor.execute("""SELECT p.photoid, p.phdata, p.phname, p.doc FROM photos p 
+    JOIN phototags pt ON p.photoid = pt.photoid JOIN tags t ON t.tagid = pt.tagid
+    WHERE t.tagname = %s""", (tagname,))
+  photos = cursor.fetchall()
+  cursor.close()
+  photos_list=[]
+  for photo in photos:
+    photoid, photodata, name, doc= photo
+    encoded_photo = base64.b64encode(photodata).decode('utf-8')
+    photos_list.append({
+      "photo_src": f"data:image/*;base64,{encoded_photo}",
+      "name": name, 
+      "photoid": photoid
+    })
+  return render_template("tagphotos.html", photos=photos_list, tag=tagname, mode=mode)
+@myapp.route('/populartags')
+def populartags():
+  cursor = conn.cursor()
+  cursor.execute(""" SELECT t.tagname, COUNT(*) as popularity FROM tags t
+  JOIN phototags pt ON t.tagid = pt.tagid GROUP BY t.tagname ORDER BY popularity DESC""")
+  tags = cursor.fetchall()
+  cursor.close()
+  return render_template("populartags.html", tags=tags)
+@myapp.route('/searchtag')
+def searchtag():
+  search = request.args.get('search','')
+  tag_list= search.split()
+  cursor = conn.cursor()
+  cursor.execute(""" SELECT p.photoid, p.phdata, p.phname, COUNT(t.tagid) AS matchct FROM photos p
+  JOIN phototags pt ON p.photoid = pt.photoid JOIN tags t ON pt.tagid = t.tagid
+  WHERE t.tagname = ANY(%s) GROUP BY p.photoid, p.phdata, p.phname ORDER BY matchct DESC""", 
+  (tag_list,))
+  photos = cursor.fetchall()
+  cursor.close()
+  photos_list=[]
+  for photo in photos:
+    photoid, photodata, name, matchct= photo
+    encoded_photo = base64.b64encode(photodata).decode('utf-8')
+    photo_src = f"data:image/*;base64,{encoded_photo}"
+    photos_list.append({
+      "photoid": photoid,
+      "photo_src": photo_src,
+      "name": name
+    })
+  return render_template("searchtags.html", photos= photos_list)
 if __name__ == '__main__':
  myapp.run(debug=True)

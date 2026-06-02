@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head><title>Popular tags</title></head>
+    <body>
+
+        <h4>Most Popular tags</h4>
+        <a href="/">Back to Home</a>
+        <hr>
+        <div>
+        {% for tag in tags %}
+        <div>
+
+            <a href="/tag/{{ tag[0] }}"> #{{ tag[0] }}</a>
+                <h5>Used {{ tag[1] }} times</h5> <!---Popularity count shown-->
+                    · · ─ ·✶· ─ · ·
+        </div>
+        {% endfor %}
+        </div>
+    </body>
+</html>

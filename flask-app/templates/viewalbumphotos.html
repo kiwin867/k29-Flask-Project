@@ -24,7 +24,10 @@
     </button>
 </form>
 <h5>{{ photo.doc }} </h5>
-<h15>{{ photo.name }} </h5>
+<h5>{{ photo.name }} </h5>
+<div> {% for tag in photo.tags%} 
+<a href="{{ url_for('viewphotosbytag', tagname=tag, mode='all') }}">#{{ tag }}</a> 
+{% endfor %}</div>
 <!-- src attr is dynamically set to a user's photo URL -->
 <!-- alt ayyt provides alternative text for image -->
 <!-- style designated inline the height -->

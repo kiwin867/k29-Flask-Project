@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head> <title> Search Photos </title></head>
+        <body>
+            <form action="/searchtag", method="GET">
+            <input type="text" name="search" placeholder="Enter tags (e.g. animal cute hai)">
+            <button type="submit">Search</button>
+            </form>
+            <h4>Search Results</h4>
+            <a href="/">Back to Home</a>
+            <hr>
+            {% for photo in photos%}
+            <div>
+
+            <div>
+                <img src="{{ photo.photo_src }}" alt="Photo" style="height: 300px;">
+                <h5>{{photo.name}}</h5>
+                · · ─ ·✶· ─ · ·
+            </div>
+            {% endfor %}
+            </div>
+    
+</html>
