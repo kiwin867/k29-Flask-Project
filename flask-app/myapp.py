@@ -406,6 +406,34 @@ def likephoto():
     conn.commit()
     cursor.close()
     return redirect(url_for('viewalbumphotos', albumid=albumid, heart=heart)) #online help
+@myapp.route('/photosforyou')
+def photosforyou():
+    if logged_in_user == "Guest":
+        return "Please log in to view photos for you."
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM flusers WHERE email = %s', (logged_in_user,))
+    userid = cursor.fetchone()[0]
+    cursor.execute("""
+    SELECT t.tagname, COALESCE(tag_count, 0) as tag_count
+    FROM photos p
+    LEFT JOIN (SELECT )
+    ORDER BY tag_count DESC
+    LIMIT 5;
+    """, (userid, userid, userid))
+    photos_data = cursor.fetchall()
+    photos_list = []
+    for photo in photos_data:
+        photo_data, doc, phname, photoid = photo
+        encoded_photo = base64.b64encode(photo_data).decode('utf-8')
+        photo_src = f"data:image/*;base64,{encoded_photo}"
+        photos_list.append({
+        'photo_src': photo_src,
+        'doc': doc,
+        'name': phname,
+        'photoid': photoid
+        })
+    cursor.close()
+    return render_template('photosforyou.html', photos=photos_list)
 @myapp.route('/viewcomments')
 def viewcomments():
     photoid = request.args.get('photoid')
