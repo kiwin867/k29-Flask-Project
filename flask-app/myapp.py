@@ -290,8 +290,7 @@ def viewalbumphotos():
         'photoid': photoid,
         'phlikes': phlikes,
         'liked': is_liked,
-        'heart_icon': heart_icon,
-        'likers': likers_list
+        'likers': likers_list,
         'heart_icon': heart_icon,
         'tags' : tag_list
         })
