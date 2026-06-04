@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS photos;
+DROP TABLE IF EXISTS photos CASCADE;
 
 CREATE TABLE photos (
  photoid serial primary key,

@@ -1,1 +1,1 @@
-CREATE database flaskdb;
+CREATE database flaskdb WITH OWNER k29;

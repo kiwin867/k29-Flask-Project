@@ -262,6 +262,7 @@ def viewalbumphotos():
     photos_list = []
     for photo in photos:
         photo_data, doc, phname, photoid = photo
+        print("photo_data: ", photo_data)
         encoded_photo = base64.b64encode(photo_data).decode('utf-8')
         photo_src = f"data:image/*;base64,{encoded_photo}"
         cursor.execute('SELECT COUNT(*) FROM likes WHERE photoid = %s', (photoid,))
@@ -533,7 +534,8 @@ def viewcomments():
         comments_list.append({
             'first_name': commenter_fname,
             'last_name': commenter_lname,
-            'comment_text': comment_text
+            'comment_text': comment_text,
+            'doc': doc
         })
     cursor.close()
     return render_template('viewcomments.html', comments=comments_list, photoname=photoname, photoid=photoid, photo_src=photo_src)

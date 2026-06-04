@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS albums;
+DROP TABLE IF EXISTS albums CASCADE;
 
 CREATE TABLE albums (
  albumid serial primary key,

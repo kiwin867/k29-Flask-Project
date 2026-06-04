@@ -1,4 +1,4 @@
-DROP TABLE IF EXISTS tags;
+DROP TABLE IF EXISTS tags CASCADE;
 
 CREATE TABLE tags (
  tagid serial primary key,

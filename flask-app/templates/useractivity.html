@@ -9,7 +9,7 @@
 <div>
     <!-- start a loop for all users in users list -->
     {% for activity in activities %}
-    <h5>{{ activity.fname }} {{ activity.lname }}: {{activity.photos_uploaded}}, {{activity.comments_on_others}} {{ activity.total_activity }} activities</h5>
+    <h5>{{ activity.fname }} {{ activity.lname }}: {{activity.photos_uploaded}} photos uploaded, {{activity.comments_on_others}} comments on others, {{ activity.total_activity }} total activities</h5>
     {% endfor %}
 </div>
 

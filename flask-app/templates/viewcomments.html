@@ -14,7 +14,7 @@
 <div>
     <!-- start a loop for all users in users list -->
     {% for comment in comments %}
-    <h5>{{ comment.first_name }} {{ comment.last_name }}: {{ comment.comment_text }}</h5>
+    <h5> ({{comment.doc}}) {{ comment.first_name }} {{ comment.last_name }}: {{ comment.comment_text }}</h5>
     {% endfor %}
     <div>
 <form method="POST" action="/addcomment" style="display: inline;">
