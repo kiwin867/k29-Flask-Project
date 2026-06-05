@@ -2,19 +2,19 @@
 -- Note: photo column uses base64 encoded image data stored in variables
 
 -- Define photo data variables
-\set frieren_photo_data `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/frieren.b64`
-\set serie_photo_data `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/serie.b64`
-\set musashi_photo_data `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/asuka.b64`
-\set asuka_photo_data `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/asuka.b64`
-\set shin_photo_data `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/dorohedoroshin.b64`
-\set coco_photo_data `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/coco.b64`
-\set agott_photo_data `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/Agott.b64`
-\set richeh_photo_data `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/Richeh.b64`
-\set tetia_photo_data `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/Tetia.b64`
-\set qifrey_photo_data `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/qifrey.b64`
-\set olly_photo_data `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/Olruggio.b64`
-\set yachio_photo_data `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/yachio.b64`
-\set kaguya_photo_data `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/kaguya.b64`
+\set frieren_photo_data `cat $BASE_DIR/frieren.b64`
+\set serie_photo_data `cat $BASE_DIR/serie.b64`
+\set musashi_photo_data `cat $BASE_DIR/asuka.b64`
+\set asuka_photo_data `cat $BASE_DIR/asuka.b64`
+\set shin_photo_data `cat $BASE_DIR/dorohedoroshin.b64`
+\set coco_photo_data `cat $BASE_DIR/coco.b64`
+\set agott_photo_data `cat $BASE_DIR/Agott.b64`
+\set richeh_photo_data `cat $BASE_DIR/Richeh.b64`
+\set tetia_photo_data `cat $BASE_DIR/Tetia.b64`
+\set qifrey_photo_data `cat $BASE_DIR/qifrey.b64`
+\set olly_photo_data `cat $BASE_DIR/Olruggio.b64`
+\set yachio_photo_data `cat $BASE_DIR/yachio.b64`
+\set kaguya_photo_data `cat $BASE_DIR/kaguya.b64`
 
 -- Insert users with their photos
 INSERT INTO flusers (fname, lname, email, pass, photo, dob) VALUES
