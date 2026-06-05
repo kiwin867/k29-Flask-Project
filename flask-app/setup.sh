@@ -71,6 +71,10 @@ echo "Creating tables and inserting sample data..."
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SQL_DIR="$SCRIPT_DIR/sql_scripts"
+STATIC_DIR="$SCRIPT_DIR/static"
+export BASE_DIR="$STATIC_DIR"
+# psql -v BASE_DIR="$STATIC_DIR" -h $DATABASE_HOST -p $DATABASE_PORT -U $USERNAME -d $DATABASE -f "$SQL_DIR/insert_photos.sql"
+# psql -v BASE_DIR="$STATIC_DIR" -h $DATABASE_HOST -p $DATABASE_PORT -U $USERNAME -d $DATABASE -f "$SQL_DIR/insert_users.sql"
 
 # Check if sql_scripts directory exists
 if [ ! -d "$SQL_DIR" ]; then

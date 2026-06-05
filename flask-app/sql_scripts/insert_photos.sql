@@ -1,15 +1,14 @@
 -- Insert sample photos into photos table with base64 encoded image data
-
--- Define photo data variables for all images in static folder
-\set frierenboss_photo `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/frierenboss.b64`
-\set frierenflowers_photo `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/frierenflowers.b64`
-\set frierensleep_photo `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/frierensleep.b64`
-\set frierensleep2_photo `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/frierensleep2.b64`
-\set gruvbox_photo `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/gruvbox.b64`
-\set luffygear5_photo `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/luffygear5.b64`
-\set road_photo `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/road.b64`
-\set subnautica_photo `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/subnautica.b64`
-\set teamoartist_photo `cat /home/kiwin867/vscode/k29-Flask-Project/flask-app/static/teamoartist.b64`
+-- Define photo data variables for all images in folder
+\set frierenboss_photo `cat $BASE_DIR/frierenboss.b64`
+\set frierenflowers_photo `cat $BASE_DIR/frierenflowers.b64`
+\set frierensleep_photo `cat $BASE_DIR/frierensleep.b64`
+\set frierensleep2_photo `cat $BASE_DIR/frierensleep2.b64`
+\set gruvbox_photo `cat $BASE_DIR/gruvbox.b64`
+\set luffygear5_photo `cat $BASE_DIR/luffygear5.b64`
+\set road_photo `cat $BASE_DIR/road.b64`
+\set subnautica_photo `cat $BASE_DIR/subnautica.b64`
+\set teamoartist_photo `cat $BASE_DIR/teamoartist.b64`
 
 -- Insert photos with base64 encoded image data (18 total photos)
 INSERT INTO photos (albumid, phdata, phname, doc) VALUES
